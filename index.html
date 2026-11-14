@@ -1,0 +1,407 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- アプリ名・スマホ対応（PWA設定） -->
+    <title>営業性格＆特性バランス診断</title>
+    <meta name="apple-mobile-web-app-title" content="営業性格診断">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ff6b81">
+
+    <style>
+        :root {
+            --primary-color: #ff6b81;
+            --secondary-color: #f8f9fa;
+            --text-color: #333;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #fff5f7;
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 650px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .question-box {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .question-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .options {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+        }
+        .options label {
+            flex: 1;
+            text-align: center;
+            font-size: 12px;
+            cursor: pointer;
+            background: var(--secondary-color);
+            padding: 10px 4px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .options input {
+            display: block;
+            margin: 0 auto 5px auto;
+        }
+        .options label:hover {
+            background: #ffe3e6;
+        }
+        .options input:checked + span {
+            font-weight: bold;
+        }
+        .options label:has(input:checked) {
+            border-color: var(--primary-color);
+            background: #fff0f3;
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            box-shadow: 0 4px 10px rgba(255, 107, 129, 0.3);
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #result-container {
+            display: none;
+        }
+        .result-card {
+            background: #fff0f3;
+            border-left: 6px solid var(--primary-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .result-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        .result-desc {
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .trait-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .trait-box h4 {
+            margin: 0 0 10px 0;
+            color: #555;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
+            text-align: left;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+        .advice-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .advice-box h4 {
+            margin: 0 0 8px 0;
+            color: #333;
+        }
+        .restart-btn {
+            background-color: #666;
+            box-shadow: 0 4px 10px rgba(102, 102, 102, 0.3);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="quiz-container">
+        <h1>営業性格＆特性バランス診断</h1>
+        <p class="subtitle">直感で最も当てはまるものを選んでください（全10問）</p>
+        
+        <form id="diagnosis-form">
+            <!-- 質問がここに動的に挿入されます -->
+        </form>
+
+        <div class="btn-container">
+            <button type="button" onclick="calculateResult()">診断結果を見る</button>
+        </div>
+    </div>
+
+    <div id="result-container">
+        <h1>診断結果</h1>
+        <div class="result-card">
+            <div class="result-title" id="res-type-name"></div>
+            <div class="result-desc" id="res-type-desc"></div>
+            
+            <div class="trait-box">
+                <h4>📊 特性バランス・レーダーチャート</h4>
+                <canvas id="radarCanvas" width="360" height="360"></canvas>
+            </div>
+
+            <div class="advice-box">
+                <h4>💡 あなた自身の成長のコツ & メンタルケア</h4>
+                <p id="res-type-advice"></p>
+            </div>
+        </div>
+        <div class="btn-container">
+            <button type="button" class="restart-btn" onclick="resetQuiz()">もう一度診断する</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { text: "1. 初めてのお客様ともすぐに打ち解け、店全体を盛り上げるような接客が好きだ。", type: "I", trait: "社交性" },
+        { text: "2. お客様とのやり取りや好みの情報を、ノートやスマホできっちり管理・継続したい。", type: "A", trait: "計画性" },
+        { text: "3. 自分の意見を主張するより、相手のペースや場の空気を和ませることを優先しがちだ。", type: "S", trait: "協調性" },
+        { text: "4. 売上の浮き沈みや、お客様からの何気ない一言で気持ちが大きく揺れやすい。", type: "S", trait: "感受性" },
+        { text: "5. 新しい営業手法や高い売上目標にチャレンジして、一番を狙うことに燃える。", type: "L", trait: "挑戦心" },
+        { text: "6. その場のノリや自分の感情の波が、表情やテンションにストレートに出やすい。", type: "I", trait: "社交性" },
+        { text: "7. なんとなくの感覚で動くのは苦手で、何をどうすべきか筋道を立てて考えたい。", type: "A", trait: "計画性" },
+        { text: "8. トラブルやギスギスした空気が嫌いで、周囲との調和を常に意識している。", type: "S", trait: "協調性" },
+        { text: "9. ライバルに負けたくないという気持ちが強く、自分の頭で戦略を練るのが好きだ。", type: "L", trait: "挑戦心" },
+        { text: "10. 予期せぬトラブルや厳しい状況に直面しても、比較的冷静さを保って対応できる。", type: "S", trait: "感受性" }
+    ];
+
+    const traitsList = ["挑戦心", "社交性", "計画性", "協調性", "感受性"];
+
+    const typeDetails = {
+        L: {
+            name: "① 主導（リーダー）タイプ",
+            desc: "結果重視で負けず嫌い、高い目標に向けて戦略的に売上を攻略していくタイプです。",
+            advice: "高い挑戦意欲と戦略性を持って、自ら成果を切り開くポテンシャルがあります。プレッシャーに強い反面、スピード重視で周囲を置いてきぼりにしないよう、客観的なデータやマイルストーンを意識するとさらに安定感がアップします。"
+        },
+        I: {
+            name: "② 表現（アイドル）タイプ",
+            desc: "圧倒的な愛嬌と社交エネルギーで、周囲を巻き込むムードメーカーのタイプです。",
+            advice: "豊かな感情表現と人を惹きつける魅力が最大の武器になります。感情の波に左右されやすい一面があるため、気分が落ち込んだときの『切り替えルーティン』を持っておくと、長期的なパフォーマンスが安定します。"
+        },
+        A: {
+            name: "③ 記述（アナリスト）タイプ",
+            desc: "几帳面さと真面目さが高く、細かな情報を分析して丁寧に行動するタイプです。",
+            advice: "高い几帳面さに基づいた情報管理や真摯な対応が強みです。完璧に準備したいあまり行動が遅れがちなときは、『まず小さく試して修正する』フットワークの軽さを意識すると、知識が実際の成果に直結しやすくなります。"
+        },
+        S: {
+            name: "④ 協調（サポーター）タイプ",
+            desc: "共感力や配慮が非常に高く、気配り上手で信頼関係をじっくり築く癒やし系のタイプです。",
+            advice: "お客様や仲間からの深い信頼を勝ち取る力があります。一方でプレッシャーや周囲の空気に敏感に影響を受けやすいため、自分の成果や貢献度を過小評価せず、『ここまで相手を安心させた』という事実をご自身でしっかり認めてあげましょう。"
+        }
+    };
+
+    const form = document.getElementById('diagnosis-form');
+
+    questions.forEach((q, index) => {
+        const box = document.createElement('div');
+        box.className = 'question-box';
+        
+        let optionsHtml = '';
+        const labels = ["かなりそうだ", "そうだ", "どちらでもない", "ちがう", "かなり違う"];
+        const scores = [5, 4, 3, 2, 1];
+
+        for (let i = 0; i < 5; i++) {
+            optionsHtml += `
+                <label>
+                    <input type="radio" name="q${index}" value="${scores[i]}" ${i === 2 ? 'checked' : ''} required>
+                    <span>${labels[i]}</span>
+                </label>
+            `;
+        }
+
+        box.innerHTML = `
+            <div class="question-title">${q.text}</div>
+            <div class="options">${optionsHtml}</div>
+        `;
+        form.appendChild(box);
+    });
+
+    function calculateResult() {
+        let scores = { L: 0, I: 0, A: 0, S: 0 };
+        let traitRawScores = { "挑戦心": [], "社交性": [], "計画性": [], "協調性": [], "感受性": [] };
+        
+        questions.forEach((q, index) => {
+            const selected = document.querySelector(`input[name="q${index}"]:checked`);
+            if (selected) {
+                const val = parseInt(selected.value);
+                scores[q.type] += val;
+                if (traitRawScores[q.trait]) {
+                    traitRawScores[q.trait].push(val);
+                }
+            }
+        });
+
+        let traitAverages = {};
+        traitsList.forEach(trait => {
+            const arr = traitRawScores[trait];
+            const avg = arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 3;
+            traitAverages[trait] = avg;
+        });
+
+        let highestType = 'L';
+        let maxScore = -1;
+        for (const type in scores) {
+            if (scores[type] > maxScore) {
+                maxScore = scores[type];
+                highestType = type;
+            }
+        }
+
+        const data = typeDetails[highestType];
+        document.getElementById('res-type-name').innerText = data.name;
+        document.getElementById('res-type-desc').innerText = data.desc;
+        document.getElementById('res-type-advice').innerText = data.advice;
+
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('result-container').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        drawRadarChart(traitAverages);
+    }
+
+    function drawRadarChart(averages) {
+        const canvas = document.getElementById('radarCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = 110;
+        const numAxes = traitsList.length;
+
+        ctx.clearRect(0, 0, width, height);
+
+        for (let level = 1; level <= 5; level++) {
+            const r = (radius / 5) * level;
+            ctx.beginPath();
+            for (let i = 0; i < numAxes; i++) {
+                const angle = (Math.PI * 2 / numAxes) * i - Math.PI / 2;
+                const x = centerX + r * Math.cos(angle);
+                const y = centerY + r * Math.sin(angle);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = level === 5 ? '#ccc' : '#eee';
+            ctx.lineWidth = level === 5 ? 1.5 : 1;
+            ctx.stroke();
+        }
+
+        for (let i = 0; i < numAxes; i++) {
+            const angle = (Math.PI * 2 / numAxes) * i - Math.PI / 2;
+            const x = centerX + radius * Math.cos(angle);
+            const y = centerY + radius * Math.sin(angle);
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            const labelRadius = radius + 25;
+            const labelX = centerX + labelRadius * Math.cos(angle);
+            const labelY = centerY + labelRadius * Math.sin(angle);
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillStyle = '#444';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const traitName = traitsList[i];
+            const scoreVal = averages[traitName].toFixed(1);
+            ctx.fillText(`${traitName} (${scoreVal})`, labelX, labelY);
+        }
+
+        ctx.beginPath();
+        for (let i = 0; i < numAxes; i++) {
+            const traitName = traitsList[i];
+            const score = averages[traitName];
+            const r = (radius / 5) * score;
+            const angle = (Math.PI * 2 / numAxes) * i - Math.PI / 2;
+            const x = centerX + r * Math.cos(angle);
+            const y = centerY + r * Math.sin(angle);
+            
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+
+        ctx.fillStyle = 'rgba(255, 107, 129, 0.25)';
+        ctx.fill();
+        ctx.strokeStyle = '#ff6b81';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        for (let i = 0; i < numAxes; i++) {
+            const traitName = traitsList[i];
+            const score = averages[traitName];
+            const r = (radius / 5) * score;
+            const angle = (Math.PI * 2 / numAxes) * i - Math.PI / 2;
+            const x = centerX + r * Math.cos(angle);
+            const y = centerY + r * Math.sin(angle);
+
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff6b81';
+            ctx.fill();
+        }
+    }
+
+    function resetQuiz() {
+        document.getElementById('diagnosis-form').reset();
+        document.getElementById('quiz-container').style.display = 'block';
+        document.getElementById('result-container').style.display = 'none';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>
